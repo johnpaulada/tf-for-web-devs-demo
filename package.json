@@ -1,0 +1,23 @@
+{
+  "name": "@johnpaulada/tf-for-web-devs-demo",
+  "version": "1.0.0",
+  "description": "Using TensorFlow.js for Web Developers",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel index.html",
+    "server": "node server.js"
+  },
+  "keywords": [
+    "tensorflowjs",
+    "tfjs",
+    "tensorflow",
+    "webdevelopment",
+    "javascript"
+  ],
+  "author": "John Paul Ada",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}

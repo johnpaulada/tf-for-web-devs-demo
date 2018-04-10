@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>TF For Web Devs Demo</title>
+
+  <!-- Imports -->
+
+  <!-- Modern Normalize -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/modern-normalize@0.4.0/modern-normalize.min.css">
+
+  <!-- Bulma -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css">
+
+  <!-- TensorFlow.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.8.0"></script>
+  <script defer src="./main.js"></script>
+</head>
+<body>
+  <section class="hero is-warning">
+    <div class="hero-body">
+      <div class="container">
+        <h1 class="title">
+          TensorFlow for Web Developers
+        </h1>
+        <h2 class="subtitle">
+          Simple Demo
+        </h2>
+      </div>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container">
+      <div class="field">
+        <a id="train" class="button is-rounded">Train</a>
+      </div>
+      <div style="display:none;" class="notification is-info">
+        <button class="delete"></button>
+        <span id="status"></span>
+      </div>
+        
+      <img id="preview" src="" alt="Preview" class="image">
+
+      <div class="field">
+        <label class="label">Filename</label>
+        <div class="control">
+          <input id="fileUrl" class="input" type="text" placeholder="Ballot-test.png">
+        </div>
+      </div>
+
+      <div class="field is-grouped">
+        <div class="control">
+          <button id="predict" class="button is-link">Check</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
