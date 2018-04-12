@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css">
 
   <!-- TensorFlow.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.8.0"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.9.0/dist/tf.min.js"></script>
   <script defer src="./main.js"></script>
 </head>
 <body>
@@ -36,11 +36,12 @@
       <div class="field">
         <a id="train" class="button is-rounded">Train</a>
       </div>
+
       <div style="display:none;" class="notification is-info">
         <button class="delete"></button>
         <span id="status"></span>
       </div>
-        
+
       <img id="preview" src="" alt="Preview" class="image">
 
       <div class="field">

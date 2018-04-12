@@ -1,20 +1,22 @@
+const BATCH_SIZE = 2
+const EPOCHS     = 600
+
 let mobnet = {},
     voteModel = {}
 
 init()
 
-function init() {
-  document.querySelector('#train').addEventListener('click', () => {
+async function init() {
+  document.querySelector('#train').addEventListener('click', async () => {
     document.querySelector('.notification').style.display = "block";
     train()
   })
-  document.querySelector('#predict').addEventListener('click', () => {
+  document.querySelector('#predict').addEventListener('click', async () => {
     predict()
   })
 }
 
 async function train() {
-  setStatus("Training...")
   mobnet = await getMobnet()
 
   const trainingData = getData()
@@ -22,11 +24,20 @@ async function train() {
   voteModel = getModel()
 
   await voteModel.fit(trainingData.x, trainingData.y, {
-    batchSize: 2,
-    epochs: 200
+    batchSize: BATCH_SIZE,
+    epochs: EPOCHS,
+    callbacks: {
+      onEpochBegin: async count => {
+        console.log(`${count}/${EPOCHS}`)
+      },
+      onTrainBegin: async () => {
+        setStatus("Training...")
+      },
+      onTrainEnd: async () => {
+        setStatus("Training Complete!")
+      }
+    }
   })
-
-  setStatus("Training Complete!")
 }
 
 async function predict() {
@@ -39,6 +50,8 @@ async function predict() {
   const mobnetOutput = mobnet.predict(mobnetInput)
   const voteOutput = voteModel.predict(mobnetOutput)
   
+  console.log(voteOutput)
+
   alert((await voteOutput.data()).map(v => v > 0.9).reduce((p, v, i) => {
     return v ? `${p} ${["Duterte", "Miriam", "Binay"][i]}` : p
   }, "Voted for:"))
@@ -50,14 +63,14 @@ function getModel() {
       tf.layers.flatten({inputShape: [7, 7, 256]}),
       tf.layers.dense({
         units: 48,
-        activation: 'relu',
+        activation: 'tanh',
       }),
-      tf.layers.dropout({rate: 0.2}),
+      tf.layers.dropout({rate: 0.1}),
       tf.layers.dense({
         units: 48,
-        activation: 'relu',
+        activation: 'tanh',
       }),
-      tf.layers.dropout({rate: 0.2}),
+      tf.layers.dropout({rate: 0.1}),
       tf.layers.dense({
         units: 3,
         activation: 'sigmoid'
@@ -95,7 +108,7 @@ function getData() {
 }
 
 function rawXToImage(rawX) {
-    const image = document.createElement('img');
+    const image = new Image(500, 500);
     image.src = `./public/ballots/${rawX}.png`; 
 
     return image
@@ -107,7 +120,7 @@ function imageToInput(image) {
     const resizedImage = tf.image.resizeBilinear(tfImage, [224, 224])
     const batchedImage = resizedImage.expandDims(0)
     const normalizedImage = batchedImage.toFloat().div(tf.scalar(127)).sub(tf.scalar(1))
-  
+
     return normalizedImage
   })
 }
