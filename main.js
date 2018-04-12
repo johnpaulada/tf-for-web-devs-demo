@@ -1,8 +1,8 @@
 const BATCH_SIZE = 2
-const EPOCHS     = 600
+const EPOCHS     = 400
 
-let mobnet = {},
-    voteModel = {}
+let mobnet = {}
+let voteModel = {}
 
 init()
 
@@ -17,60 +17,63 @@ async function init() {
 }
 
 async function train() {
-  mobnet = await getMobnet()
-
   const trainingData = getData()
-
+  mobnet = await getMobnet()
   voteModel = getModel()
+
+  setStatus("Training...")
 
   await voteModel.fit(trainingData.x, trainingData.y, {
     batchSize: BATCH_SIZE,
     epochs: EPOCHS,
     callbacks: {
-      onEpochBegin: async count => {
-        console.log(`${count}/${EPOCHS}`)
-      },
-      onTrainBegin: async () => {
-        setStatus("Training...")
-      },
-      onTrainEnd: async () => {
-        setStatus("Training Complete!")
-      }
+      onEpochBegin: async count => console.log(`${count}/${EPOCHS}`),
+      onTrainEnd:   async () => setStatus("Training Complete!")
     }
   })
 }
 
 async function predict() {
-  // Set image preview
-  const urlInput = document.querySelector('#fileUrl')
-  const image = document.querySelector('#preview')
-  image.src = `./public/ballots/${urlInput.value}.png`
+  displayImagePreview()
 
   const mobnetInput = imageToInput(image)
   const mobnetOutput = mobnet.predict(mobnetInput)
   const voteOutput = voteModel.predict(mobnetOutput)
   
   console.log(voteOutput)
+  alert(await getResult(voteOutput))
+}
 
-  alert((await voteOutput.data()).map(v => v > 0.9).reduce((p, v, i) => {
-    return v ? `${p} ${["Duterte", "Miriam", "Binay"][i]}` : p
-  }, "Voted for:"))
+function displayImagePreview() {
+  const urlInput = document.querySelector('#fileUrl')
+  const image = document.querySelector('#preview')
+  image.src = `./public/ballots/${urlInput.value}.png`
+}
+
+async function getResult(result) {
+  const THRESHOLD = 0.9
+  const CHOICES = ["Duterte", "Miriam", "Binay"]
+
+  return (await result.data()).map(v => v > THRESHOLD).reduce((resultString, isVoted, index) => {
+    return isVoted ? `${resultString} ${CHOICES[index]}` : resultString
+  }, "Voted for:")
 }
 
 function getModel() {
   const model = tf.sequential({
     layers: [
       tf.layers.flatten({inputShape: [7, 7, 256]}),
-      tf.layers.dense({
-        units: 48,
-        activation: 'tanh',
-      }),
       tf.layers.dropout({rate: 0.1}),
       tf.layers.dense({
-        units: 48,
+        units: 256,
         activation: 'tanh',
       }),
-      tf.layers.dropout({rate: 0.1}),
+      tf.layers.dropout({rate: 0.2}),
+      tf.layers.dense({
+        units: 256,
+        activation: 'tanh',
+      }),
+      tf.layers.dropout({rate: 0.2}),
       tf.layers.dense({
         units: 3,
         activation: 'sigmoid'
@@ -85,9 +88,9 @@ function getModel() {
 
 async function getMobnet() {
   const MOBILENET_URL = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'
-  const mobileNet = await tf.loadModel(MOBILENET_URL)
-  const mobnetOutput = mobileNet.getLayer('conv_pw_13_relu')
-  const mobnetModel = tf.model({inputs: mobileNet.inputs, outputs: mobnetOutput.output})
+  const mobileNet     = await tf.loadModel(MOBILENET_URL)
+  const mobnetOutput  = mobileNet.getLayer('conv_pw_13_relu')
+  const mobnetModel   = tf.model({inputs: mobileNet.inputs, outputs: mobnetOutput.output})
 
   return mobnetModel
 }
@@ -130,40 +133,22 @@ function inputToPredictedInput(input) {
 }
 
 function getRawData() {
+  const OBSERVATIONS = 10
+  const XLIST = ['000', '001', '010', '011', '100', '101', '110', '111']
+  const YLIST = [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]]
+
   return {
-    x: ['Ballot-000-1', 'Ballot-000-2', 'Ballot-000-4',
-      'Ballot-000-5', 'Ballot-000-6', 'Ballot-000-7',
-      'Ballot-000-8', 'Ballot-000-24',
-
-      'Ballot-001-11', 'Ballot-001-13', 'Ballot-001-16', 'Ballot-001-22', 'Ballot-001-23',
-
-      'Ballot-010-18',
-    
-      'Ballot-011-20', 'Ballot-011-21',
-
-      'Ballot-100-9', 'Ballot-100-25',
-
-      'Ballot-101-17',
-    
-      'Ballot-110-10', 'Ballot-110-15',
-    
-      'Ballot-111-2', 'Ballot-111-14', 'Ballot-111-19'],
-    y: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0],
-
-      [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
-
-      [0, 1, 0],
-
-      [0, 1, 1], [0, 1, 0],
-
-      [1, 0 ,0], [1, 0 ,0],
-
-      [1, 0, 1],
-      
-      [1, 1, 0], [1, 1, 0],
-    
-      [1, 1, 1], [1, 1, 1], [1, 1, 1]]
+    x: XLIST.reduce((xs, x) => [...xs, ...generateBatches(x, OBSERVATIONS)], []),
+    y: YLIST.reduce((ys, y) => [...ys, ...generateDuplicates(y, OBSERVATIONS)], [])
   }
+}
+
+function generateBatches(pattern, count, data=[]) {
+  return count === 0 ? data : generateBatches(pattern, count-1, [...data, `Ballot-${pattern}-${count}.png`])
+}
+
+function generateDuplicates(target, count, data=[]) {
+  return count === 0 ? data : generateDuplicates(target, count-1, [...data, target])
 }
 
 async function setStatus(status) {
