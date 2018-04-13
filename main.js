@@ -33,18 +33,18 @@ async function train() {
     }
   })
 
-  // const result = voteModel.evaluate(trainingData.x, trainingData.y, {
-  //   batchSize: BATCH_SIZE,
-  //   epochs: EPOCHS,
-  //   callbacks: {
-  //     onEpochBegin: async count => console.log(`${count}/${EPOCHS}`),
-  //     onTrainEnd:   async () => setStatus("Training Complete!")
-  //   }
-  // });
+  const result = voteModel.evaluate(trainingData.x, trainingData.y, {
+    batchSize: BATCH_SIZE,
+    epochs: EPOCHS,
+    callbacks: {
+      onEpochBegin: async count => console.log(`${count}/${EPOCHS}`),
+      onTrainEnd:   async () => setStatus("Training Complete!")
+    }
+  });
 
 
-  // console.log("Accuracy:")
-  // result[1].print();
+  console.log("Accuracy:")
+  result[1].print();
 }
 
 async function predict() {
@@ -55,7 +55,12 @@ async function predict() {
   const voteOutput = voteModel.predictOnBatch(mobnetOutput)
   
   console.log(await voteOutput.data())
-  alert(await getResult(voteOutput))
+
+  swal(
+    'You voted for:',
+    await getResult(voteOutput),
+    'success'
+  )
 }
 
 async function displayImagePreview() {
@@ -88,7 +93,7 @@ async function getResult(result) {
 
   return (await result.data()).map(v => v > THRESHOLD).reduce((resultString, isVoted, index) => {
     return isVoted ? `${resultString} ${CHOICES[index]}` : resultString
-  }, "Voted for:")
+  }, "")
 }
 
 function getModel() {
