@@ -1,4 +1,4 @@
-const BATCH_SIZE = 2
+const BATCH_SIZE = 10
 const EPOCHS     = 600
 
 let mobnet = {};
@@ -126,11 +126,13 @@ async function getMobnet() {
 }
 
 async function getData() {
+  
   const trainingData = {x: [], y: []}
   const rawData = getRawData()
-
+  
   trainingData.y = tf.tensor(rawData.y)
   trainingData.x = await Promise.all(rawData.x.map(rawXToImage))
+  console.log(trainingData)
   trainingData.x = trainingData.x.map(imageToInput)
   trainingData.x = trainingData.x.map(inputToPredictedInput)
   trainingData.x = trainingData.x.reduce((p, c) => p.concat(c))
@@ -140,7 +142,6 @@ async function getData() {
 
 function rawXToImage(rawX) {
     const image = new Image(500, 500);
-
     return loadImage(image, `/public/ballots/${rawX}`)
 }
 
