@@ -1,8 +1,8 @@
 const BATCH_SIZE = 2
-const EPOCHS     = 400
+const EPOCHS     = 600
 
-let mobnet = {}
-let voteModel = {}
+let mobnet = {};
+let voteModel = {};
 
 init()
 
@@ -17,8 +17,9 @@ async function init() {
 }
 
 async function train() {
-  const trainingData = getData()
   mobnet = await getMobnet()
+
+  const trainingData = await getData()
   voteModel = getModel()
 
   setStatus("Training...")
@@ -31,23 +32,54 @@ async function train() {
       onTrainEnd:   async () => setStatus("Training Complete!")
     }
   })
+
+  // const result = voteModel.evaluate(trainingData.x, trainingData.y, {
+  //   batchSize: BATCH_SIZE,
+  //   epochs: EPOCHS,
+  //   callbacks: {
+  //     onEpochBegin: async count => console.log(`${count}/${EPOCHS}`),
+  //     onTrainEnd:   async () => setStatus("Training Complete!")
+  //   }
+  // });
+
+
+  // console.log("Accuracy:")
+  // result[1].print();
 }
 
 async function predict() {
-  displayImagePreview()
+  const image = await displayImagePreview()
 
   const mobnetInput = imageToInput(image)
   const mobnetOutput = mobnet.predict(mobnetInput)
-  const voteOutput = voteModel.predict(mobnetOutput)
+  const voteOutput = voteModel.predictOnBatch(mobnetOutput)
   
-  console.log(voteOutput)
+  console.log(await voteOutput.data())
   alert(await getResult(voteOutput))
 }
 
-function displayImagePreview() {
+async function displayImagePreview() {
   const urlInput = document.querySelector('#fileUrl')
   const image = document.querySelector('#preview')
-  image.src = `./public/ballots/${urlInput.value}.png`
+
+  return await loadImage(image, `/public/ballots/${urlInput.value}`)
+}
+
+async function loadImage(image, src) {
+  image.src = src
+  image.crossOrigin = "Anonymous"
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext("2d")
+
+  return await new Promise((resolve, reject) => {
+    image.onload = () => {
+      canvas.width = image.width
+      canvas.height = image.height
+      ctx.drawImage(image, 0, 0)
+      image.src = canvas.toDataURL("image/png")
+      resolve(image)
+    }
+  })
 }
 
 async function getResult(result) {
@@ -63,17 +95,10 @@ function getModel() {
   const model = tf.sequential({
     layers: [
       tf.layers.flatten({inputShape: [7, 7, 256]}),
-      tf.layers.dropout({rate: 0.1}),
       tf.layers.dense({
-        units: 256,
-        activation: 'tanh',
+        units: 48,
+        activation: 'relu',
       }),
-      tf.layers.dropout({rate: 0.2}),
-      tf.layers.dense({
-        units: 256,
-        activation: 'tanh',
-      }),
-      tf.layers.dropout({rate: 0.2}),
       tf.layers.dense({
         units: 3,
         activation: 'sigmoid'
@@ -81,7 +106,7 @@ function getModel() {
     ]
   })
 
-  model.compile({loss: 'categoricalCrossentropy', optimizer: 'adam'})
+  model.compile({optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy']});
 
   return model
 }
@@ -95,31 +120,28 @@ async function getMobnet() {
   return mobnetModel
 }
 
-function getData() {
-  return tf.tidy(() => {
-    const trainingData = {x: [], y: []}
-    const rawData = getRawData()
-  
-    trainingData.y = tf.tensor(rawData.y)
-    trainingData.x = rawData.x.map(rawXToImage)
-    trainingData.x = trainingData.x.map(imageToInput)
-    trainingData.x = trainingData.x.map(inputToPredictedInput)
-    trainingData.x = trainingData.x.reduce((p, c) => p.concat(c))
-  
-    return trainingData
-  })
+async function getData() {
+  const trainingData = {x: [], y: []}
+  const rawData = getRawData()
+
+  trainingData.y = tf.tensor(rawData.y)
+  trainingData.x = await Promise.all(rawData.x.map(rawXToImage))
+  trainingData.x = trainingData.x.map(imageToInput)
+  trainingData.x = trainingData.x.map(inputToPredictedInput)
+  trainingData.x = trainingData.x.reduce((p, c) => p.concat(c))
+
+  return trainingData
 }
 
 function rawXToImage(rawX) {
     const image = new Image(500, 500);
-    image.src = `./public/ballots/${rawX}.png`; 
 
-    return image
+    return loadImage(image, `/public/ballots/${rawX}`)
 }
 
 function imageToInput(image) {
   return tf.tidy(() => {
-    const tfImage = tf.fromPixels(image)
+    const tfImage = tf.fromPixels(image);
     const resizedImage = tf.image.resizeBilinear(tfImage, [224, 224])
     const batchedImage = resizedImage.expandDims(0)
     const normalizedImage = batchedImage.toFloat().div(tf.scalar(127)).sub(tf.scalar(1))
@@ -134,6 +156,8 @@ function inputToPredictedInput(input) {
 
 function getRawData() {
   const OBSERVATIONS = 10
+  // const XLIST = ['001', '010', '100']
+  // const YLIST = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
   const XLIST = ['000', '001', '010', '011', '100', '101', '110', '111']
   const YLIST = [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]]
 
