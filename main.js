@@ -1,5 +1,5 @@
 const BATCH_SIZE = 10
-const EPOCHS     = 600
+const EPOCHS     = 400
 
 let mobnet = {};
 let voteModel = {};
@@ -8,7 +8,7 @@ init()
 
 async function init() {
   document.querySelector('#train').addEventListener('click', async () => {
-    document.querySelector('.notification').style.display = "block";
+    document.querySelector('#train').classList.add('is-loading')
     train()
   })
   document.querySelector('#predict').addEventListener('click', async () => {
@@ -29,19 +29,18 @@ async function train() {
     epochs: EPOCHS,
     callbacks: {
       onEpochBegin: async count => console.log(`${count}/${EPOCHS}`),
-      onTrainEnd:   async () => setStatus("Training Complete!")
+      onTrainEnd:   async () => {
+        document.querySelector('#train').classList.remove('is-loading')
+        document.querySelector('.notification').style.display = "block";
+        setStatus("Training Complete!")
+      }
     }
   })
 
   const result = voteModel.evaluate(trainingData.x, trainingData.y, {
     batchSize: BATCH_SIZE,
     epochs: EPOCHS,
-    callbacks: {
-      onEpochBegin: async count => console.log(`${count}/${EPOCHS}`),
-      onTrainEnd:   async () => setStatus("Training Complete!")
-    }
   });
-
 
   console.log("Accuracy:")
   result[1].print();
