@@ -1,5 +1,5 @@
-const BATCH_SIZE = 10
-const EPOCHS     = 400
+const BATCH_SIZE = 20
+const EPOCHS     = 100
 
 let mobnet = {};
 let voteModel = {};
@@ -12,6 +12,7 @@ async function init() {
     train()
   })
   document.querySelector('#predict').addEventListener('click', async () => {
+    document.querySelector('#preview').style.display = "block";
     predict()
   })
 }
@@ -28,10 +29,15 @@ async function train() {
     batchSize: BATCH_SIZE,
     epochs: EPOCHS,
     callbacks: {
-      onEpochBegin: async count => console.log(`${count}/${EPOCHS}`),
+      onEpochBegin: async count => {
+        const progress = `${Math.round(count/EPOCHS*100)}%`
+        console.log(progress)
+      },
       onTrainEnd:   async () => {
         document.querySelector('#train').classList.remove('is-loading')
+        document.querySelector('#form').style.display = "block";
         document.querySelector('.notification').style.display = "block";
+
         setStatus("Training Complete!")
       }
     }
@@ -52,8 +58,6 @@ async function predict() {
   const mobnetInput = imageToInput(image)
   const mobnetOutput = mobnet.predict(mobnetInput)
   const voteOutput = voteModel.predictOnBatch(mobnetOutput)
-  
-  console.log(await voteOutput.data())
 
   swal(
     'You voted for:',
@@ -125,13 +129,11 @@ async function getMobnet() {
 }
 
 async function getData() {
-  
   const trainingData = {x: [], y: []}
   const rawData = getRawData()
   
   trainingData.y = tf.tensor(rawData.y)
   trainingData.x = await Promise.all(rawData.x.map(rawXToImage))
-  console.log(trainingData)
   trainingData.x = trainingData.x.map(imageToInput)
   trainingData.x = trainingData.x.map(inputToPredictedInput)
   trainingData.x = trainingData.x.reduce((p, c) => p.concat(c))
@@ -161,8 +163,6 @@ function inputToPredictedInput(input) {
 
 function getRawData() {
   const OBSERVATIONS = 10
-  // const XLIST = ['001', '010', '100']
-  // const YLIST = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
   const XLIST = ['000', '001', '010', '011', '100', '101', '110', '111']
   const YLIST = [[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]]
 

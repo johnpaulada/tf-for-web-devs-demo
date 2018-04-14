@@ -27,10 +27,11 @@
     <div class="hero-body">
       <div class="container">
         <h1 class="title">
-          TensorFlow for Web Developers
+          TensorFlow for Web Developers Demo
         </h1>
-        <h2 class="subtitle">
-          Simple Demo
+        <h2 class="subtitle is-6">
+          Trains on a list of "ballot" images and predicts which candidates were selected in a provided image. <br>
+          Press train to start and write <em>Ballot-test.png</em> on the input box that will appear and press <em>Check</em>.
         </h2>
       </div>
     </div>
@@ -38,7 +39,7 @@
   <section class="section">
     <div class="container">
       <div class="field">
-        <a id="train" class="button is-rounded is-success">Train</a>
+        <a id="train" class="button is-rounded is-success is-large">Train</a>
       </div>
 
       <div style="display:none;" class="notification is-info">
@@ -46,20 +47,23 @@
         <span id="status"></span>
       </div>
 
-      <img id="preview" src="" alt="Preview" class="image">
+      <img style="display:none;" id="preview" src="" alt="Preview" class="image">
 
-      <div class="field">
-        <label class="label">Filename</label>
-        <div class="control">
-          <input id="fileUrl" class="input" type="text" placeholder="Ballot-test.png">
+      <div id="form" style="display:none;">
+        <div class="field">
+          <label class="label">Filename</label>
+          <div class="control">
+            <input id="fileUrl" class="input" type="text" placeholder="Ballot-test.png">
+          </div>
+        </div>
+  
+        <div class="field is-grouped">
+          <div class="control">
+            <button id="predict" class="button is-link">Check</button>
+          </div>
         </div>
       </div>
 
-      <div class="field is-grouped">
-        <div class="control">
-          <button id="predict" class="button is-link">Check</button>
-        </div>
-      </div>
     </div>
   </section>
 </body>
